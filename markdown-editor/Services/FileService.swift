@@ -57,4 +57,24 @@ nonisolated enum FileService {
             throw FileServiceError.cannotWrite(fileURL, underlying: error)
         }
     }
+
+    // MARK: - Comparing with the editor
+
+    /// Compares a file on disk with the text the editor last read from or wrote to it.
+    ///
+    /// It compares contents rather than modification dates, so touching a file or rewriting it with
+    /// identical text is not reported as a change. A file that exists but can't be read throws.
+    static func diskState(of fileURL: URL, comparedTo knownText: String) throws -> FileDiskState {
+        do {
+            let diskText = try readText(at: fileURL)
+            return diskText == knownText ? .unchanged : .changed(diskText: diskText)
+        } catch FileServiceError.cannotRead(_, let underlying) where isNoSuchFile(underlying) {
+            // Reading directly, instead of checking first, leaves no gap for the file to vanish in.
+            return .missing
+        }
+    }
+
+    private static func isNoSuchFile(_ error: Error) -> Bool {
+        (error as? CocoaError)?.code == .fileReadNoSuchFile
+    }
 }

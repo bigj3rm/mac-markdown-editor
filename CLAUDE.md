@@ -27,8 +27,12 @@ Features:
 ## Project facts
 
 - Build: `xcodebuild -project markdown-editor.xcodeproj -scheme markdown-editor -destination 'platform=macOS' build`
-- Sources live in `markdown-editor/`, a synchronized folder: new files and subfolders are picked up by Xcode automatically, so the `.pbxproj` needs no file entries.
-- Folders: `Models/` (plain data), `Services/` (file I/O, dialogs, the local image scheme handler), `Stores/` (observable state), `Markdown/` (HTML rendering), `Views/` (SwiftUI and AppKit wrappers).
+- Test: the same command with `test` instead of `build`. Tests are written with Swift Testing and live in `markdown-editorTests/`, hosted in the app. Add or update tests with every behavior change.
+- Sources live in `markdown-editor/` and tests in `markdown-editorTests/`, both synchronized folders: new files and subfolders are picked up by Xcode automatically, so the `.pbxproj` needs no file entries.
+- Folders: `Models/` (plain data and state rules), `Services/` (file I/O, dialogs, the local image scheme handler), `Stores/` (observable state), `Markdown/` (HTML rendering), `Views/` (SwiftUI and AppKit wrappers).
+- Ask the user questions only through `WorkspacePrompting` (the real dialogs are in `SystemPrompter`), never by showing an `NSAlert` or panel from a store, so the store logic stays testable with `StubPrompter`.
+- The state rules for the open file (what counts as unsaved, missing, or reloaded) live in `OpenDocument`; `WorkspaceStore` does the reading, writing and asking around it.
+- Files changed outside the editor are detected by comparing contents, when the app becomes active and just before saving. A deleted file keeps its text in the editor and counts as unsaved until it is saved again.
 - The target uses default `MainActor` isolation, so every type is `@MainActor` unless marked otherwise. Mark pure types (models, file I/O, the renderer) `nonisolated`.
 - The app is sandboxed with user-selected files set to read-write and outgoing connections enabled (required for WKWebView to run at all). Entitlements come from build settings (`ENABLE_*`), not an entitlements file.
 - Preview pages load under the custom `local-image://` scheme (`LocalImageSchemeHandler`), which serves image files from inside the opened folder only. Keep the Content-Security-Policy in `HTMLPage` restricted to that scheme so markdown can never trigger a network request.

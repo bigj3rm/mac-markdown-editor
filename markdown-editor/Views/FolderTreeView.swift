@@ -2,12 +2,16 @@ import SwiftUI
 
 /// The sidebar: the opened folder as the top row, with its subfolders and markdown files beneath it.
 struct FolderTreeView: View {
-    let workspace: WorkspaceStore
+    @Bindable var workspace: WorkspaceStore
 
     var body: some View {
         if let rootFolder = workspace.rootFolder {
-            List(selection: selectedFileURL) {
+            List(selection: $workspace.treeSelection) {
                 FolderRowView(node: rootFolder, workspace: workspace, startsExpanded: true)
+            }
+            // The store opens the clicked file, then moves the highlight back if the file didn't open.
+            .onChange(of: workspace.treeSelection) {
+                workspace.treeSelectionChanged()
             }
             // A new identity per folder resets which rows are expanded.
             .id(rootFolder.url)
@@ -22,17 +26,5 @@ struct FolderTreeView: View {
                 }
             }
         }
-    }
-
-    /// Selecting a row opens that file. If the user cancels the unsaved-changes prompt, the old selection stays.
-    private var selectedFileURL: Binding<URL?> {
-        Binding(
-            get: { workspace.selectedFileURL },
-            set: { newURL in
-                if let newURL {
-                    workspace.openFile(at: newURL)
-                }
-            }
-        )
     }
 }

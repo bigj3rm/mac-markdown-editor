@@ -5,6 +5,11 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let workspace = WorkspaceStore()
 
+    // Another program may have changed the files while this app was in the background.
+    func applicationDidBecomeActive(_ notification: Notification) {
+        workspace.refreshFromDisk()
+    }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         workspace.confirmDiscardingChanges() ? .terminateNow : .terminateCancel
     }

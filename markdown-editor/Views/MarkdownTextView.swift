@@ -4,8 +4,10 @@ import SwiftUI
 /// An AppKit text view for editing markdown as plain monospaced text, with undo.
 struct MarkdownTextView: NSViewRepresentable {
     @Binding var text: String
-    /// Identifies the open file. When it changes, the undo history is cleared so Undo can't reach into another file.
+    /// Identifies the open file. When it changes, the editor starts at the top of the new file.
     let documentID: URL?
+    /// Changes when the text is replaced from disk. With `documentID`, it clears the undo history so Undo can't mix old and new text.
+    let revision: Int
 
     private static let fontSize: CGFloat = 13
     private static let textInset = NSSize(width: 12, height: 12)
@@ -37,15 +39,20 @@ struct MarkdownTextView: NSViewRepresentable {
         if textView.string != text {
             textView.string = text
         }
-        if coordinator.documentID != documentID {
+
+        let isNewDocument = coordinator.documentID != documentID
+        if isNewDocument || coordinator.revision != revision {
             coordinator.documentID = documentID
+            coordinator.revision = revision
             textView.undoManager?.removeAllActions()
+        }
+        if isNewDocument {
             textView.scrollToBeginningOfDocument(nil)
         }
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, documentID: documentID)
+        Coordinator(text: $text, documentID: documentID, revision: revision)
     }
 
     // MARK: - Coordinator
@@ -54,10 +61,12 @@ struct MarkdownTextView: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextViewDelegate {
         var text: Binding<String>
         var documentID: URL?
+        var revision: Int
 
-        init(text: Binding<String>, documentID: URL?) {
+        init(text: Binding<String>, documentID: URL?, revision: Int) {
             self.text = text
             self.documentID = documentID
+            self.revision = revision
         }
 
         func textDidChange(_ notification: Notification) {

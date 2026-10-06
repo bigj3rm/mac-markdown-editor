@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One row of the folder tree. A folder shows its contents when expanded, loading them the first time.
+/// One row of the folder tree. A folder shows its contents when expanded, reading them again each time it opens.
 struct FolderRowView: View {
     let node: FileNode
     let workspace: WorkspaceStore
@@ -23,7 +23,7 @@ struct FolderRowView: View {
             }
             .onChange(of: isExpanded) { _, expanded in
                 if expanded {
-                    workspace.loadChildren(of: node.url)
+                    workspace.reloadChildren(of: node.url)
                 }
             }
         } else {

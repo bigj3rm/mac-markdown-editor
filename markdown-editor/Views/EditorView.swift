@@ -5,8 +5,20 @@ struct EditorView: View {
     @Bindable var workspace: WorkspaceStore
 
     var body: some View {
-        if workspace.selectedFileURL != nil {
-            MarkdownTextView(text: $workspace.text, documentID: workspace.selectedFileURL)
+        if let fileName = workspace.selectedFileName {
+            VStack(spacing: 0) {
+                if workspace.isMissingOnDisk {
+                    MissingFileBanner(fileName: fileName) {
+                        workspace.saveCurrentFile()
+                    }
+                    Divider()
+                }
+                MarkdownTextView(
+                    text: $workspace.text,
+                    documentID: workspace.selectedFileURL,
+                    revision: workspace.documentRevision
+                )
+            }
         } else {
             ContentUnavailableView(
                 "No File Open",
