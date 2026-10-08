@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // The app has one window, so closing it quits, which runs the unsaved-changes check above.
+    // The close button asks to quit before the window closes (see `QuitOnCloseButton`).
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
     }

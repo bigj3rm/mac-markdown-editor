@@ -44,6 +44,7 @@ struct ContentView: View {
         .navigationTitle(workspace.selectedFileName ?? "Markdown Editor")
         .navigationSubtitle(workspace.hasUnsavedChanges ? "Edited" : "")
         .toolbar { toolbarContent }
+        .background(QuitOnCloseButton())
         .onChange(of: previewInput) { _, input in
             preview.update(for: input.text, documentID: input.documentID)
         }

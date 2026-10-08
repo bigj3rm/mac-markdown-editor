@@ -65,6 +65,75 @@ struct WorkspaceStoreTreeSelectionTests {
         #expect(fixture.store.treeSelection == fixture.folder.url(for: "a.md"))
     }
 
+    // MARK: - Folders
+
+    @Test func clickingAFolderKeepsItHighlightedWithoutAnAlertOrAChangeToTheEditor() throws {
+        let fixture = try WorkspaceFixture(files: ["a.md": "A", "sub/deep.md": "deep"])
+        click("a.md", in: fixture)
+        let subfolder = try fixture.rootChild(named: "sub")
+
+        fixture.store.treeSelection = subfolder.url
+        fixture.store.treeSelectionChanged()
+
+        #expect(fixture.store.treeSelection == subfolder.url)
+        #expect(fixture.store.presentedAlert == nil)
+        #expect(fixture.store.selectedFileName == "a.md")
+        #expect(fixture.store.text == "A")
+    }
+
+    @Test func clickingAFolderNeverAsksAboutUnsavedEdits() throws {
+        let fixture = try WorkspaceFixture(files: ["a.md": "A", "sub/deep.md": "deep"])
+        click("a.md", in: fixture)
+        fixture.store.text = "edited"
+        let subfolder = try fixture.rootChild(named: "sub")
+
+        fixture.store.treeSelection = subfolder.url
+        fixture.store.treeSelectionChanged()
+
+        #expect(fixture.prompter.unsavedChangesQuestions.isEmpty)
+        #expect(fixture.store.text == "edited")
+        #expect(fixture.store.hasUnsavedChanges)
+    }
+
+    @Test func clickingAFolderWithNoFileOpenIsAlsoQuiet() throws {
+        let fixture = try WorkspaceFixture(files: ["sub/deep.md": "deep"])
+        let subfolder = try fixture.rootChild(named: "sub")
+
+        fixture.store.treeSelection = subfolder.url
+        fixture.store.treeSelectionChanged()
+
+        #expect(fixture.store.treeSelection == subfolder.url)
+        #expect(fixture.store.presentedAlert == nil)
+        #expect(fixture.store.selectedFileURL == nil)
+    }
+
+    @Test func clickingAFileAfterAFolderOpensItNormally() throws {
+        let fixture = try WorkspaceFixture(files: ["a.md": "A", "sub/deep.md": "deep"])
+        let subfolder = try fixture.rootChild(named: "sub")
+        fixture.store.treeSelection = subfolder.url
+        fixture.store.treeSelectionChanged()
+
+        click("a.md", in: fixture)
+
+        #expect(fixture.store.selectedFileName == "a.md")
+        #expect(fixture.store.treeSelection == fixture.folder.url(for: "a.md"))
+    }
+
+    @Test func cancellingASwitchMovesTheHighlightBackToTheOpenFileNotTheFolder() throws {
+        let fixture = try WorkspaceFixture(files: ["a.md": "A", "b.md": "B", "sub/deep.md": "deep"])
+        click("a.md", in: fixture)
+        let subfolder = try fixture.rootChild(named: "sub")
+        fixture.store.treeSelection = subfolder.url
+        fixture.store.treeSelectionChanged()
+        fixture.store.text = "edited"
+        fixture.prompter.unsavedChangesAnswer = .cancel
+
+        click("b.md", in: fixture)
+
+        #expect(fixture.store.selectedFileName == "a.md")
+        #expect(fixture.store.treeSelection == fixture.folder.url(for: "a.md"))
+    }
+
     @Test func openingAFolderClearsTheHighlight() throws {
         let fixture = try WorkspaceFixture(files: ["a.md": "A"])
         click("a.md", in: fixture)

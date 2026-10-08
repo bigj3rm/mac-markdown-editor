@@ -11,7 +11,11 @@ struct FolderTreeView: View {
             }
             // The store opens the clicked file, then moves the highlight back if the file didn't open.
             .onChange(of: workspace.treeSelection) {
-                workspace.treeSelectionChanged()
+                // This handler runs inside the window's layout pass, where AppKit aborts any dialog
+                // that is shown. Deferring lets the pass finish so the unsaved-changes prompt can appear.
+                Task {
+                    workspace.treeSelectionChanged()
+                }
             }
             // A new identity per folder resets which rows are expanded.
             .id(rootFolder.url)

@@ -105,12 +105,26 @@ final class WorkspaceStore {
 
     /// Opens the file the user clicked in the tree.
     ///
-    /// Afterwards the highlight always matches the open file, so a cancelled or failed switch snaps back.
+    /// A clicked folder just stays highlighted and nothing else happens. Otherwise the highlight ends up on
+    /// the open file, so a cancelled or failed switch snaps back.
     func treeSelectionChanged() {
+        if let clickedURL = treeSelection, isFolder(clickedURL) {
+            return
+        }
         if let clickedURL = treeSelection {
             openFile(at: clickedURL)
         }
         treeSelection = selectedFileURL
+    }
+
+    /// Whether the tree shows this URL as a folder. Rows come from the listings, so this needs no disk access.
+    private func isFolder(_ url: URL) -> Bool {
+        if rootFolder?.url == url {
+            return true
+        }
+        return childrenByFolder.values.contains { listing in
+            listing.contains { $0.url == url && $0.isFolder }
+        }
     }
 
     // MARK: - Files

@@ -20,12 +20,7 @@ struct SystemPrompter: WorkspacePrompting {
         alert.addButton(withTitle: "Save")
         alert.addButton(withTitle: "Cancel")
         alert.addButton(withTitle: "Don’t Save")
-
-        switch alert.runModal() {
-        case .alertFirstButtonReturn: return .save
-        case .alertSecondButtonReturn: return .cancel
-        default: return .discard
-        }
+        return Self.unsavedChangesChoice(for: alert.runModal())
     }
 
     func askAboutExternalChange(fileName: String, hasUnsavedEdits: Bool) -> ExternalChangeChoice {
@@ -41,12 +36,34 @@ struct SystemPrompter: WorkspacePrompting {
             alert.addButton(withTitle: "Keep My Version")
             alert.addButton(withTitle: "Reload")
             alert.buttons[1].hasDestructiveAction = true
-            return alert.runModal() == .alertFirstButtonReturn ? .keepMine : .reload
+        } else {
+            alert.informativeText = "Do you want to reload it? Keep Current Text continues with what is shown here."
+            alert.addButton(withTitle: "Reload")
+            alert.addButton(withTitle: "Keep Current Text")
         }
+        return Self.externalChangeChoice(for: alert.runModal(), hasUnsavedEdits: hasUnsavedEdits)
+    }
 
-        alert.informativeText = "Do you want to reload it? Keep Current Text continues with what is shown here."
-        alert.addButton(withTitle: "Reload")
-        alert.addButton(withTitle: "Keep Current Text")
-        return alert.runModal() == .alertFirstButtonReturn ? .reload : .keepMine
+    // MARK: - Reading the user's answer
+
+    /// Turns the unsaved-changes alert's response into a choice.
+    ///
+    /// Only the Save and Don't Save buttons act. Anything else, such as the alert being aborted before
+    /// the user answered, counts as Cancel so edits are never thrown away by accident.
+    static func unsavedChangesChoice(for response: NSApplication.ModalResponse) -> UnsavedChangesChoice {
+        switch response {
+        case .alertFirstButtonReturn: .save
+        case .alertThirdButtonReturn: .discard
+        default: .cancel
+        }
+    }
+
+    /// Turns the outside-change alert's response into a choice.
+    ///
+    /// Only the Reload button reloads. Anything else, including an aborted alert, keeps the editor's text.
+    static func externalChangeChoice(for response: NSApplication.ModalResponse, hasUnsavedEdits: Bool) -> ExternalChangeChoice {
+        // Reload is the first button when there is nothing to lose, and the second when there are unsaved edits.
+        let reloadResponse: NSApplication.ModalResponse = hasUnsavedEdits ? .alertSecondButtonReturn : .alertFirstButtonReturn
+        return response == reloadResponse ? .reload : .keepMine
     }
 }
