@@ -58,6 +58,21 @@ nonisolated enum FileService {
         }
     }
 
+    /// Creates an empty file in a folder and returns its URL. An existing file with that name is never replaced.
+    @discardableResult
+    static func createEmptyFile(named fileName: MarkdownFileName, in folderURL: URL) throws -> URL {
+        let fileURL = folderURL.appendingPathComponent(fileName.value)
+        do {
+            // The system checks for an existing file as part of the write, so two creations can't both succeed.
+            try Data().write(to: fileURL, options: .withoutOverwriting)
+        } catch let error as CocoaError where error.code == .fileWriteFileExists {
+            throw FileServiceError.alreadyExists(fileURL)
+        } catch {
+            throw FileServiceError.cannotCreate(fileURL, underlying: error)
+        }
+        return fileURL
+    }
+
     // MARK: - Comparing with the editor
 
     /// Compares a file on disk with the text the editor last read from or wrote to it.

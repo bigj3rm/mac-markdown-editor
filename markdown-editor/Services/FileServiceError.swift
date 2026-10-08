@@ -5,6 +5,9 @@ nonisolated enum FileServiceError: LocalizedError {
     case cannotListFolder(URL, underlying: Error)
     case cannotRead(URL, underlying: Error)
     case cannotWrite(URL, underlying: Error)
+    case cannotCreate(URL, underlying: Error)
+    /// Creating a file would have replaced one that is already there.
+    case alreadyExists(URL)
 
     var errorDescription: String? {
         switch self {
@@ -14,6 +17,10 @@ nonisolated enum FileServiceError: LocalizedError {
             "Could not open “\(url.lastPathComponent)”."
         case .cannotWrite(let url, _):
             "Could not save “\(url.lastPathComponent)”."
+        case .cannotCreate(let url, _):
+            "Could not create “\(url.lastPathComponent)”."
+        case .alreadyExists(let url):
+            "“\(url.lastPathComponent)” already exists."
         }
     }
 
@@ -22,8 +29,11 @@ nonisolated enum FileServiceError: LocalizedError {
         switch self {
         case .cannotListFolder(_, let underlying),
              .cannotRead(_, let underlying),
-             .cannotWrite(_, let underlying):
+             .cannotWrite(_, let underlying),
+             .cannotCreate(_, let underlying):
             underlying.localizedDescription
+        case .alreadyExists:
+            "Choose a different name."
         }
     }
 }

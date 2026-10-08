@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The File menu items: Open Folder (Cmd+O) and Save (Cmd+S).
+/// The File menu items: Open Folder (Cmd+O), New Markdown (Cmd+N) and Save (Cmd+S).
 struct EditorCommands: Commands {
     let workspace: WorkspaceStore
 
@@ -10,6 +10,12 @@ struct EditorCommands: Commands {
                 workspace.chooseFolder()
             }
             .keyboardShortcut("o")
+
+            Button("New Markdown…") {
+                workspace.createMarkdownFile()
+            }
+            .keyboardShortcut("n")
+            .disabled(!workspace.hasOpenFolder)
         }
         CommandGroup(replacing: .saveItem) {
             Button("Save") {

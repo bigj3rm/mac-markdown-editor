@@ -73,6 +73,53 @@ struct FileServiceTests {
         }
     }
 
+    // MARK: - Creating files
+
+    private func fileName(_ typedText: String) throws -> MarkdownFileName {
+        try #require(MarkdownFileName(typedText: typedText))
+    }
+
+    @Test func createsAnEmptyFileInTheFolder() throws {
+        let folder = try TemporaryFolder()
+
+        let fileURL = try FileService.createEmptyFile(named: fileName("fresh"), in: folder.url)
+
+        #expect(fileURL.lastPathComponent == "fresh.md")
+        #expect(try folder.contents(of: "fresh.md") == "")
+    }
+
+    @Test func neverReplacesAFileThatIsAlreadyThere() throws {
+        let folder = try TemporaryFolder()
+        try folder.makeFile("taken.md", contents: "precious")
+        let name = try fileName("taken")
+
+        #expect(throws: FileServiceError.self) {
+            try FileService.createEmptyFile(named: name, in: folder.url)
+        }
+        #expect(try folder.contents(of: "taken.md") == "precious")
+    }
+
+    @Test func aTakenNameIsReportedAsAlreadyExistingNotAsAGenericFailure() throws {
+        let folder = try TemporaryFolder()
+        try folder.makeFile("taken.md")
+
+        do {
+            try FileService.createEmptyFile(named: fileName("taken"), in: folder.url)
+            Issue.record("Creating over an existing file should have thrown")
+        } catch FileServiceError.alreadyExists {
+            // Expected.
+        }
+    }
+
+    @Test func creatingInAFolderThatIsGoneThrows() throws {
+        let folder = try TemporaryFolder()
+        let name = try fileName("note")
+
+        #expect(throws: FileServiceError.self) {
+            try FileService.createEmptyFile(named: name, in: folder.url(for: "missing"))
+        }
+    }
+
     // MARK: - Comparing with the disk
 
     @Test func aFileWithTheKnownTextIsUnchanged() throws {

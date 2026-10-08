@@ -11,6 +11,17 @@ final class StubPrompter: WorkspacePrompting {
         let hasUnsavedEdits: Bool
     }
 
+    /// One question asking for the name of a new file.
+    struct NewFileNameQuestion: Equatable {
+        let folderName: String
+        let suggestedText: String
+        let notice: String?
+    }
+
+    /// Answers to hand out, one per new-file question, in order. A `nil` answer is the user cancelling.
+    /// When the list runs out every further question is cancelled, so a retry loop can never run forever.
+    var newFileNameAnswers: [String?] = []
+
     /// The folder `chooseFolder()` returns; `nil` acts like the user cancelling.
     var folderToChoose: URL?
     /// The default is `.cancel`, so a prompt a test didn't expect never discards anything.
@@ -23,6 +34,7 @@ final class StubPrompter: WorkspacePrompting {
     /// The file names of every unsaved-changes question asked, in order.
     private(set) var unsavedChangesQuestions: [String] = []
     private(set) var externalChangeQuestions: [ExternalChangeQuestion] = []
+    private(set) var newFileNameQuestions: [NewFileNameQuestion] = []
 
     func chooseFolder() -> URL? {
         duringQuestion?()
@@ -39,5 +51,12 @@ final class StubPrompter: WorkspacePrompting {
         externalChangeQuestions.append(ExternalChangeQuestion(fileName: fileName, hasUnsavedEdits: hasUnsavedEdits))
         duringQuestion?()
         return externalChangeAnswer
+    }
+
+    func askForNewFileName(inFolder folderName: String, suggestedText: String, notice: String?) -> String? {
+        newFileNameQuestions.append(NewFileNameQuestion(folderName: folderName, suggestedText: suggestedText, notice: notice))
+        duringQuestion?()
+        guard !newFileNameAnswers.isEmpty else { return nil }
+        return newFileNameAnswers.removeFirst()
     }
 }

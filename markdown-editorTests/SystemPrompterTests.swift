@@ -18,6 +18,17 @@ struct SystemPrompterTests {
         #expect(SystemPrompter.unsavedChangesChoice(for: response) == .cancel)
     }
 
+    // MARK: - New file name alert (Create, Cancel)
+
+    @Test func createReturnsWhatWasTyped() {
+        #expect(SystemPrompter.newFileName(for: .alertFirstButtonReturn, typedText: "notes") == "notes")
+    }
+
+    @Test(arguments: [NSApplication.ModalResponse.alertSecondButtonReturn, .abort, .stop, .cancel, .OK])
+    func anythingOtherThanCreateCreatesNothing(response: NSApplication.ModalResponse) {
+        #expect(SystemPrompter.newFileName(for: response, typedText: "notes") == nil)
+    }
+
     // MARK: - Outside change alert
 
     @Test func reloadIsTheFirstButtonWhenThereAreNoUnsavedEdits() {

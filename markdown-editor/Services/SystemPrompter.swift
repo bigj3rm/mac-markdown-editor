@@ -44,7 +44,58 @@ struct SystemPrompter: WorkspacePrompting {
         return Self.externalChangeChoice(for: alert.runModal(), hasUnsavedEdits: hasUnsavedEdits)
     }
 
+    func askForNewFileName(inFolder folderName: String, suggestedText: String, notice: String?) -> String? {
+        let alert = NSAlert()
+        alert.messageText = "New Markdown File"
+        alert.informativeText = notice ?? "Name the new file in “\(folderName)”. “.md” is added if you leave it off."
+
+        let field = NSTextField(frame: NSRect(origin: .zero, size: Self.nameFieldSize))
+        field.stringValue = suggestedText
+        field.placeholderString = "Name"
+        alert.accessoryView = field
+
+        let createButton = alert.addButton(withTitle: "Create")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+
+        // A text field only holds its delegate weakly, so the checker is kept alive while the alert is open.
+        let checker = CreateButtonChecker(button: createButton)
+        field.delegate = checker
+        checker.update(for: suggestedText)
+        return withExtendedLifetime(checker) {
+            Self.newFileName(for: alert.runModal(), typedText: field.stringValue)
+        }
+    }
+
+    private static let nameFieldSize = NSSize(width: 300, height: 24)
+
+    /// Keeps the Create button disabled while the typed name can't be used.
+    private final class CreateButtonChecker: NSObject, NSTextFieldDelegate {
+        private let button: NSButton
+
+        init(button: NSButton) {
+            self.button = button
+        }
+
+        func update(for text: String) {
+            button.isEnabled = MarkdownFileName(typedText: text) != nil
+        }
+
+        func controlTextDidChange(_ notification: Notification) {
+            guard let field = notification.object as? NSTextField else { return }
+            update(for: field.stringValue)
+        }
+    }
+
     // MARK: - Reading the user's answer
+
+    /// Returns the typed text only when the Create button was pressed.
+    ///
+    /// Cancel, or an alert that was aborted before the user answered, creates nothing.
+    static func newFileName(for response: NSApplication.ModalResponse, typedText: String) -> String? {
+        response == .alertFirstButtonReturn ? typedText : nil
+    }
+
 
     /// Turns the unsaved-changes alert's response into a choice.
     ///

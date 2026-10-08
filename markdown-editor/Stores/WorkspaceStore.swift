@@ -177,6 +177,72 @@ final class WorkspaceStore {
         }
     }
 
+    // MARK: - New files
+
+    /// Whether there is a folder to create files in.
+    var hasOpenFolder: Bool {
+        rootFolder != nil
+    }
+
+    private static let invalidNameNotice = "That name can’t be used. Names can’t be empty, start with a dot, or contain “/” or “:”."
+
+    /// Asks for a name and creates an empty markdown file in the folder the tree has highlighted.
+    ///
+    /// The question is asked again if the name can't be used or is taken. Nothing else changes: the open
+    /// file, the editor and any unsaved edits are left alone, so there is nothing to ask about them.
+    func createMarkdownFile() {
+        guard let folderURL = folderForNewFile() else { return }
+
+        var suggestedText = ""
+        var notice: String?
+        while let typedText = ask({
+            prompter.askForNewFileName(inFolder: folderURL.lastPathComponent, suggestedText: suggestedText, notice: notice)
+        }) {
+            suggestedText = typedText
+            guard let fileName = MarkdownFileName(typedText: typedText) else {
+                notice = Self.invalidNameNotice
+                continue
+            }
+            switch createFile(named: fileName, in: folderURL) {
+            case .done:
+                return
+            case .nameTaken:
+                notice = "“\(fileName.value)” already exists in this folder. Choose a different name."
+            }
+        }
+    }
+
+    /// The folder for a new file: the highlighted folder, the folder holding the highlighted file, or the root.
+    private func folderForNewFile() -> URL? {
+        guard let rootURL = rootFolder?.url else { return nil }
+        guard let highlightedURL = treeSelection else { return rootURL }
+        return isFolder(highlightedURL) ? highlightedURL : folderListing(containing: highlightedURL) ?? rootURL
+    }
+
+    /// The folder whose listing contains this URL, in the same form the tree uses for that folder.
+    private func folderListing(containing url: URL) -> URL? {
+        childrenByFolder.first { $0.value.contains { $0.url == url } }?.key
+    }
+
+    /// How an attempt to create a file ended.
+    private enum CreationOutcome {
+        /// Created, or failed with an alert already shown. Either way there is nothing more to ask.
+        case done
+        case nameTaken
+    }
+
+    private func createFile(named fileName: MarkdownFileName, in folderURL: URL) -> CreationOutcome {
+        do {
+            try FileService.createEmptyFile(named: fileName, in: folderURL)
+            reloadChildren(of: folderURL)
+        } catch FileServiceError.alreadyExists {
+            return .nameTaken
+        } catch {
+            presentedAlert = AlertMessage(error: error)
+        }
+        return .done
+    }
+
     // MARK: - Changes made outside the editor
 
     /// Brings the tree and the open file up to date with the disk. Called when the app returns to the front.

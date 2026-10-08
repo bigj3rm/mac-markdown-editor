@@ -11,4 +11,10 @@ protocol WorkspacePrompting {
 
     /// Asks whether to reload the named file after another program changed it.
     func askAboutExternalChange(fileName: String, hasUnsavedEdits: Bool) -> ExternalChangeChoice
+
+    /// Asks for the name of a new markdown file in the named folder.
+    ///
+    /// `suggestedText` fills the field, and `notice` explains why the question is being asked again.
+    /// Returns what the user typed, or `nil` if they cancelled.
+    func askForNewFileName(inFolder folderName: String, suggestedText: String, notice: String?) -> String?
 }
