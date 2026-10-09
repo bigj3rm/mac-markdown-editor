@@ -4,113 +4,65 @@
 
 # Markdown Editor
 
-A small, fast, native markdown editor for macOS. Open a folder of notes, edit them as plain text, and watch a
-live GitHub-style preview next to your writing.
+A small, fast, native markdown editor for macOS. Open a folder of notes, write in plain text, and watch a live
+GitHub-style preview beside it. It works offline, and your notes stay ordinary `.md` files on disk.
 
-It is built with SwiftUI and AppKit, works entirely offline, and keeps your files as ordinary `.md` files on disk.
-There is no database, no account, and no sync service.
+## Install
 
-## Why
+You don't need to download the source code.
 
-Plenty of apps can render markdown, but many are heavyweight, store notes in their own format, or want an
-account. This app aims to do one thing well: let you browse a folder of markdown files, write in them without
-friction, and never lose your work.
+1. Go to the [**Releases** page](https://github.com/bigj3rm/mac-markdown-editor/releases/latest) and download the
+   latest `Markdown-Editor-x.y.z.dmg`.
+2. Open the disk image and drag **Markdown Editor** onto **Applications**.
+3. The first time you open it, macOS will say it can't verify the app, because it isn't signed with a paid Apple
+   developer certificate. Click **Done**, open **System Settings → Privacy & Security**, scroll to the Security
+   section, click **Open Anyway** next to Markdown Editor, and confirm. You only need to do this once.
+
+Requires a Mac with Apple silicon, running macOS 26.6 or later.
 
 ## Features
 
-### Writing
-- **Folder tree.** Open any folder and browse its subfolders and `.md` files in the sidebar. Folders are read
-  only when you expand them, so large folders stay quick.
-- **Plain-text editor.** A monospaced editor with full undo. Smart quotes and dashes are turned off so your
-  markdown is never silently rewritten.
-- **New files.** **File → New Markdown…** (⌘N) creates an empty `.md` file in the folder you have selected
-  (a selected folder, the folder of a selected file, or the root). It adds `.md` for you and never overwrites
-  an existing file.
+- **Folder tree.** Browse a folder's subfolders and `.md` files. Folders load when you expand them, so large
+  folders stay quick.
+- **Editor.** Monospaced plain text with full undo. Smart quotes and dashes are off, so your markdown is never
+  silently rewritten.
+- **Live preview.** Toggle it from the toolbar. It covers headings, emphasis, strikethrough, code, quotes,
+  lists, task lists, tables with alignment, links, images and rules, in light and dark mode, and it keeps its
+  scroll position as you type.
+- **New files.** **File → New Markdown…** (⌘N) creates an empty file in the folder you have selected. It adds
+  `.md` for you and never overwrites an existing file.
+- **Your work is protected.** Unsaved edits are flagged, and the app asks before you switch files, open another
+  folder, close the window or quit. If a file is changed by another program, you choose whether to reload it.
+  If it is deleted, its text stays in the editor so you can save it again.
+- **Private.** The app never uses the network, and it is sandboxed to the folders you open. Raw HTML in a
+  document is shown as text rather than run. Images show only if they are local files inside the opened folder.
 
-### Live preview
-- **Side-by-side preview** you can toggle from the toolbar, styled like GitHub, with automatic light and dark
-  mode.
-- Covers headings, emphasis, strikethrough, inline code, fenced code blocks, block quotes, ordered and
-  unordered lists, task-list checkboxes, tables with column alignment, links, images, horizontal rules and
-  line breaks.
-- **Stays smooth.** Updates are debounced while you type, and the preview keeps its scroll position when it
-  refreshes.
-- **Local images.** Images referenced by relative path (for example `images/diagram.png`) show up, as long as
-  they are inside the folder you opened.
+## Build from source
 
-### Never lose your work
-- **Unsaved-changes indicator** and ⌘S to save. You are asked before switching files, opening another folder,
-  closing the window or quitting with unsaved edits.
-- **Notices changes made elsewhere.** When you return to the app (and just before saving), it checks the open
-  file against the disk. If another program changed it, you choose whether to reload or keep your version.
-  Saving never silently overwrites someone else's edit.
-- **Deleted files keep their text.** If the open file is deleted or moved, your text stays in the editor with a
-  banner, so you can copy it out or save it to recreate the file.
-- The folder tree refreshes when you come back to the app.
+Open `markdown-editor.xcodeproj` in Xcode 27 or later and press **⌘R**. The only dependency is
+[swift-markdown](https://github.com/swiftlang/swift-markdown), which Xcode fetches automatically.
 
-### Private and safe by design
-- **Offline.** The app never uses the network. Remote images are not loaded, and a Content-Security-Policy in the
-  preview blocks every request except local images.
-- **Raw HTML is shown as text,** never run. All text is escaped before it reaches the preview, and links open
-  in your default browser rather than inside the app.
-- **Sandboxed.** The app can only read and write the folders you choose.
-
-## Requirements
-
-- macOS 26.6 or later
-- Xcode 27 or later to build it
-
-## Build and run
-
-1. Clone the repository and open `markdown-editor.xcodeproj` in Xcode.
-2. Select the **markdown-editor** scheme and press **⌘R**.
-
-The only dependency is [swift-markdown](https://github.com/swiftlang/swift-markdown), which Xcode downloads
-automatically the first time you build.
-
-To make a standalone app, build the Release configuration:
-
-```bash
-xcodebuild -project markdown-editor.xcodeproj -scheme markdown-editor -configuration Release -destination 'platform=macOS' -derivedDataPath build build
-```
-
-The app is created at `build/Build/Products/Release/markdown-editor.app`. Drag it into `/Applications`.
-
-> The app is not code-signed with a developer certificate or notarized. It runs fine on the Mac that built it. On
-> another Mac, right-click the app and choose **Open** the first time.
-
-## Tests
+Run the tests with:
 
 ```bash
 xcodebuild -project markdown-editor.xcodeproj -scheme markdown-editor -destination 'platform=macOS' test
 ```
 
-The tests use [Swift Testing](https://developer.apple.com/documentation/testing) and cover file handling, the
-unsaved-changes and outside-change rules, tree selection, new-file creation and the markdown renderer's escaping
-and output.
+The code is organized into `Models`, `Services`, `Stores`, `Markdown` and `Views` folders. Conventions are
+written down in [`CLAUDE.md`](CLAUDE.md).
 
-## How it is organized
+## Publishing a release
 
-```
-markdown-editor/
-├── Models/      Plain data and state rules (the open document, file names, tree rows)
-├── Services/    File reading and writing, system dialogs, the local image loader
-├── Stores/      Observable state for the workspace and the preview
-├── Markdown/    The markdown-to-HTML renderer and the preview's styling
-└── Views/       SwiftUI views and the AppKit text and web views they wrap
-markdown-editorTests/
-```
-
-Views only display things. State lives in the stores, file access lives in `FileService`, and every question
-the app asks you goes through a small protocol, so the logic can be tested without any windows. Contributor
-conventions are written down in [`CLAUDE.md`](CLAUDE.md).
+Releases are built by GitHub, not on a personal machine. Open the repository's **Actions** tab, choose
+**Release**, click **Run workflow**, and enter a version such as `1.0.0`. The workflow builds the `main`
+branch, runs the tests, packages the `.dmg`, and publishes it on the Releases page.
 
 ## Known limitations
 
 - Only local images are supported; remote images are deliberately not loaded.
-- The preview cannot tell tight lists from loose ones, so every list is rendered in the compact style.
-- One window and one open folder at a time.
-- No "Save As", rename or delete commands yet. Use Finder for those; the app picks up the changes.
+- Every list is rendered in the compact style, because the markdown parser doesn't report loose lists.
+- One window and one open folder at a time, and no Save As, rename or delete. Use Finder for those; the app
+  notices the changes when you return to it.
 
 ## License
 

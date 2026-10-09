@@ -1,0 +1,71 @@
+name: Release
+
+# Run this by hand from the Actions tab. It always builds the main branch,
+# whichever branch you pick in the "Run workflow" menu.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number, for example 1.0.0 (the release will be tagged v1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write # lets the workflow create the release and its tag
+
+jobs:
+  release:
+    name: Build and publish
+    # This project needs Xcode 27, which the standard macOS runners don't have yet.
+    runs-on: xcode-27
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check the version number
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::The version must look like 1.2.3, not '$VERSION'."
+            exit 1
+          fi
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::error::A release for v$VERSION already exists. Choose a new version number."
+            exit 1
+          fi
+
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Select Xcode 27.0
+        run: sudo xcode-select -s /Applications/Xcode_27.0.app
+
+      # A release is only published if every test passes.
+      - name: Run the tests
+        run: xcodebuild -project markdown-editor.xcodeproj -scheme markdown-editor -destination 'platform=macOS' test
+
+      - name: Build the app
+        run: |
+          xcodebuild -project markdown-editor.xcodeproj -scheme markdown-editor \
+            -configuration Release -destination 'platform=macOS' \
+            -derivedDataPath build \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            build
+
+      - name: Package the disk image
+        run: |
+          dmg="Markdown-Editor-$VERSION.dmg"
+          scripts/package-dmg.sh build/Build/Products/Release/markdown-editor.app "$dmg"
+          shasum -a 256 "$dmg" > "$dmg.sha256"
+
+      - name: Publish the release
+        run: |
+          dmg="Markdown-Editor-$VERSION.dmg"
+          gh release create "v$VERSION" "$dmg" "$dmg.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$(git rev-parse HEAD)" \
+            --title "Markdown Editor $VERSION" \
+            --notes-file .github/release-notes.md \
+            --generate-notes
