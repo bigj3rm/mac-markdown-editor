@@ -7,6 +7,8 @@
 A small, fast, native markdown editor for macOS. Open a folder of notes, write in plain text, and watch a live
 GitHub-style preview beside it. It works offline, and your notes stay ordinary `.md` files on disk.
 
+![Markdown Editor showing a folder of notes, the editor, and the live preview](docs/screenshot.png)
+
 ## Install
 
 You don't need to download the source code.
@@ -27,7 +29,7 @@ Requires a Mac with Apple silicon, running macOS 26.6 or later.
 - **Editor.** Monospaced plain text with full undo. Smart quotes and dashes are off, so your markdown is never
   silently rewritten.
 - **Live preview.** Toggle it from the toolbar. It covers headings, emphasis, strikethrough, code, quotes,
-  lists, task lists, tables with alignment, links, images and rules, in light and dark mode, and it keeps its
+  nested lists, task lists, tables with alignment, links, images and rules, in light and dark mode, and it keeps its
   scroll position as you type.
 - **New files.** **File → New Markdown…** (⌘N) creates an empty file in the folder you have selected. It adds
   `.md` for you and never overwrites an existing file.
@@ -60,7 +62,6 @@ branch, runs the tests, packages the `.dmg`, and publishes it on the Releases pa
 ## Known limitations
 
 - Only local images are supported; remote images are deliberately not loaded.
-- Every list is rendered in the compact style, because the markdown parser doesn't report loose lists.
 - One window and one open folder at a time, and no Save As, rename or delete. Use Finder for those; the app
   notices the changes when you return to it.
 
