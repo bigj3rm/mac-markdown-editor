@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Xcode: build output and per-user state (the shared scheme in xcshareddata is kept)
+build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad
