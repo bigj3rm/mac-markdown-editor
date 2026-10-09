@@ -50,9 +50,10 @@ nonisolated enum PreviewStylesheet {
     ul, ol { padding-left: 2em; }
     li + li { margin-top: 0.25em; }
     li > ul, li > ol { margin: 0.25em 0 0; }
-    li > p { margin: 0 0 0.25em; }
+    li > p { margin: 16px 0 0; }
+    li:first-child > p:first-child { margin-top: 0; }
     .task-list-item { list-style: none; }
-    .task-list-item > input { margin: 0 0.4em 0.25em -1.4em; vertical-align: middle; }
+    .task-list-item input { margin: 0 0.4em 0.25em -1.4em; vertical-align: middle; }
 
     code {
       padding: 0.2em 0.4em;

@@ -68,34 +68,43 @@ nonisolated struct MarkdownHTMLRenderer: MarkupVisitor {
     // MARK: - Lists
 
     mutating func visitUnorderedList(_ unorderedList: UnorderedList) -> String {
-        "<ul>\n\(renderChildren(of: unorderedList))</ul>\n"
+        "<ul>\n\(renderItems(of: unorderedList))</ul>\n"
     }
 
     mutating func visitOrderedList(_ orderedList: OrderedList) -> String {
         let startAttribute = orderedList.startIndex == Self.defaultListStart ? "" : " start=\"\(orderedList.startIndex)\""
-        return "<ol\(startAttribute)>\n\(renderChildren(of: orderedList))</ol>\n"
+        return "<ol\(startAttribute)>\n\(renderItems(of: orderedList))</ol>\n"
     }
 
-    mutating func visitListItem(_ listItem: ListItem) -> String {
-        let content = renderListItemContent(of: listItem)
+    private mutating func renderItems(of list: some ListItemContainer) -> String {
+        let isLoose = ListSpacing.isLoose(list)
+        return list.children.compactMap { $0 as? ListItem }.map { renderListItem($0, isLoose: isLoose) }.joined()
+    }
+
+    private mutating func renderListItem(_ listItem: ListItem, isLoose: Bool) -> String {
         guard let checkbox = listItem.checkbox else {
-            return "<li>\(content)</li>\n"
+            return "<li>\(renderListItemContent(of: listItem, isLoose: isLoose, leading: ""))</li>\n"
         }
         let checkedAttribute = checkbox == .checked ? " checked" : ""
-        return "<li class=\"task-list-item\"><input type=\"checkbox\" disabled\(checkedAttribute)> \(content)</li>\n"
+        let checkboxHTML = "<input type=\"checkbox\" disabled\(checkedAttribute)> "
+        let content = renderListItemContent(of: listItem, isLoose: isLoose, leading: checkboxHTML)
+        return "<li class=\"task-list-item\">\(content)</li>\n"
     }
 
-    /// swift-markdown doesn't say whether a list is tight, so an item with a single paragraph is
-    /// rendered without `<p>` (like GitHub's tight lists) and an item with several keeps them.
-    private mutating func renderListItemContent(of listItem: ListItem) -> String {
-        let hasSeveralParagraphs = listItem.children.filter { $0 is Paragraph }.count > 1
-
-        return listItem.children.map { child in
-            if let paragraph = child as? Paragraph, !hasSeveralParagraphs {
-                return renderChildren(of: paragraph)
+    /// A tight list shows paragraph text directly in the item, and a loose list wraps each paragraph in `<p>`.
+    /// `leading` goes at the very start, inside the first paragraph, so a checkbox stays on the same line as its text.
+    private mutating func renderListItemContent(of listItem: ListItem, isLoose: Bool, leading: String) -> String {
+        var html = ""
+        for (index, child) in listItem.children.enumerated() {
+            let prefix = index == 0 ? leading : ""
+            if let paragraph = child as? Paragraph {
+                let text = prefix + renderChildren(of: paragraph)
+                html += isLoose ? "<p>\(text)</p>\n" : text
+            } else {
+                html += prefix + visit(child)
             }
-            return visit(child)
-        }.joined()
+        }
+        return html
     }
 
     // MARK: - Tables
